@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Text;
 
 namespace PharmacyManager
 {
     public class Medicine : ActiveRecord
     {
         static string connectionString = @"Integrated Security=SSPI;" +
-                                         "Initial Catalog=PharmacyManager;" +
+                                         "Initial Catalog=Pharmacy;" +
                                          "Data Source=.\\SQLEXPRESS;";
 
         public override int Id { get; set; }
@@ -18,6 +17,7 @@ namespace PharmacyManager
         public decimal Price { get; protected set; }
         public int Amount { get; protected set; }
         public bool WithPrescription { get; set; }
+        public SqlConnection SqlConnection;
 
         public Medicine(int id, string name, string manufacturer, decimal price, int amount, bool withPrescription)
         {
@@ -38,217 +38,280 @@ namespace PharmacyManager
             WithPrescription = withPrescription;
         }
 
-        public Medicine() { }
-
-        public override void Reload() { }
-        public override void Remove() { }
-        public override void Save() { }
-
-        public Medicine GetMedicineById(int idSellMedicine)
+        public Medicine()
         {
+        }
+
+        public override Medicine Reload()
+        {
+            Console.Clear();
+            MainMenu.MenuS();
+
+            string getName = "";
+            string getManufacturer = "";
+            decimal getPrice = 0;
+            int getAmount = 0;
+            bool getWithPrescription = false;
+
             try
             {
-                using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+                ConsoleEx.WriteLine("".PadLeft(115, '='), ConsoleColor.DarkMagenta);
+                ConsoleEx.WriteLine(" Please enter data of the medicine:", ConsoleColor.Gray);
+                Console.Write(" >> Name: ");
+                getName = Console.ReadLine().Trim();
+                Console.Write(" >> Manufacturer: ");
+                getManufacturer = Console.ReadLine().Trim();
+                Console.Write(" >> Price: ");
+                getPrice = decimal.Parse(Console.ReadLine().Trim().Replace(".", ","));
+                Console.Write(" >> Amount: ");
+                getAmount = Convert.ToInt32(Console.ReadLine().Trim());
+                Console.Write(" >> Is it a medicine with a prescription [Y/N]: ");
+                string isPrescription = Console.ReadLine().Trim().ToLower();
+                if (isPrescription == "y")
                 {
-                    sqlConnection.Open();
-                    SqlCommand sqlCommand = new SqlCommand();
-                    sqlCommand.Connection = sqlConnection;
-                    sqlCommand.CommandText = $"SELECT * FROM Medicines WHERE Id = @Id;";
-
-                    var sqIdParam = new SqlParameter
-                    {
-                        ParameterName = "@Id",
-                        Value = idSellMedicine,
-                        DbType = DbType.Int32
-                    };
-
-                    sqlCommand.Parameters.Add(sqIdParam);
-
-                    SqlDataReader sqlReader = sqlCommand.ExecuteReader();
-                    sqlReader.Read();
-
-                    Medicine medicine = new Medicine(sqlReader.GetInt32(0), sqlReader.GetString(1),
-                            sqlReader.GetString(2), sqlReader.GetDecimal(3), sqlReader.GetInt32(4), sqlReader.GetBoolean(5));
-                    return medicine;
+                    getWithPrescription = true;
                 }
+            }
+            catch (FormatException e)
+            {
+                Console.Write("Wrong data format. " + e.Message);
+                Console.ReadLine();
             }
             catch (Exception e)
             {
-                Console.WriteLine("Something wen wrong..." + e.Message);
+                Console.Write("Something went wrong... " + e.Message);
+                Console.ReadLine();
             }
-            return null;
+            return new Medicine(getName, getManufacturer, getPrice, getAmount, getWithPrescription);
         }
 
-
-        public int AddSingleMedicine(Medicine medicine)
+        public Medicine ReloadById(int idSellMedicine)
         {
-            using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+            var SqlConnection = new SqlConnection(connectionString);
+            SqlConnection.Open();
+            SqlCommand sqlCommand = new SqlCommand();
+            sqlCommand.Connection = SqlConnection;
+            sqlCommand.CommandText = $"SELECT * FROM Medicines WHERE Id = @Id;";
+
+            var sqIdParam = new SqlParameter
             {
-                sqlConnection.Open();
-                var sqlCommand = new SqlCommand();
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = $@"INSERT INTO Medicines (Name, Manufacturer, Price, Amount, WithPrescription) 
+                ParameterName = "@Id",
+                Value = idSellMedicine,
+                DbType = DbType.Int32
+            };
+
+            sqlCommand.Parameters.Add(sqIdParam);
+
+            SqlDataReader sqlReader = sqlCommand.ExecuteReader();
+            sqlReader.Read();
+
+            Medicine medicine = new Medicine(sqlReader.GetInt32(0), sqlReader.GetString(1),
+                sqlReader.GetString(2), sqlReader.GetDecimal(3), sqlReader.GetInt32(4), sqlReader.GetBoolean(5));
+            return medicine;
+        }
+
+        public Medicine ReloadToEdit(string previousMedicineName)
+        {
+            Console.Clear();
+            MainMenu.MenuS();
+
+            string getManufacturer = "";
+            decimal getPrice = 0;
+            int getAmount = 0;
+            bool getWithPrescription = false;
+
+            try
+            {
+                ConsoleEx.WriteLine("".PadLeft(115, '='), ConsoleColor.DarkMagenta);
+                ConsoleEx.WriteLine(" Please enter data of the medicine:", ConsoleColor.Gray);
+                Console.Write(" >> Manufacturer: ");
+                getManufacturer = Console.ReadLine().Trim();
+                Console.Write(" >> Price: ");
+                getPrice = decimal.Parse(Console.ReadLine().Trim().Replace(".", ","));
+                Console.Write(" >> Amount: ");
+                getAmount = Convert.ToInt32(Console.ReadLine().Trim());
+                Console.Write(" >> Is it a medicine with a prescription [Y/N]: ");
+                string isPrescription = Console.ReadLine().Trim().ToLower();
+                if (isPrescription == "y")
+                {
+                    getWithPrescription = true;
+                }
+            }
+            catch (FormatException e)
+            {
+                Console.Write("Wrong data format. " + e.Message);
+                Console.ReadLine();
+            }
+            catch (Exception e)
+            {
+                Console.Write("Something went wrong... " + e.Message);
+                Console.ReadLine();
+            }
+            return new Medicine(previousMedicineName, getManufacturer, getPrice, getAmount, getWithPrescription);
+        }
+
+        public override void Remove(int idDeleteMedicine)
+        {
+            try
+            {
+                var SqlConnection = new SqlConnection(connectionString);
+                SqlConnection.Open();
+                SqlCommand sqlCommand = new SqlCommand();
+                sqlCommand.Connection = SqlConnection;
+                sqlCommand.CommandText = $"DELETE FROM Medicines WHERE Id = @Id;";
+
+                SqlParameter sqlIdParam = new SqlParameter();
+                sqlIdParam.ParameterName = "@Id";
+                sqlIdParam.Value = idDeleteMedicine;
+                sqlIdParam.DbType = DbType.Int32;
+
+                sqlCommand.Parameters.Add(sqlIdParam);
+
+                sqlCommand.ExecuteNonQuery();
+                SqlConnection.Close();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Something went wrong..." + e.Message);
+            }
+        }
+
+        public override int Save(Medicine medicine)
+        {
+            SqlConnection = Open();
+            var sqlCommand = new SqlCommand();
+            sqlCommand.Connection = SqlConnection;
+            sqlCommand.CommandText = $@"INSERT INTO Medicines (Name, Manufacturer, Price, Amount, WithPrescription) 
                                         VALUES (@Name, @Manufacturer, @Price, @Amount, @WithPrescription);
                                         SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-                var sqlNameParam = new SqlParameter
-                {
-                    ParameterName = "@Name",
-                    Value = medicine.Name,
-                    DbType = DbType.AnsiString
-                };
+            var sqlNameParam = new SqlParameter
+            {
+                ParameterName = "@Name",
+                Value = medicine.Name,
+                DbType = DbType.AnsiString
+            };
 
-                var sqlManufacturerParam = new SqlParameter
-                {
-                    ParameterName = "@Manufacturer",
-                    Value = medicine.Manufacturer,
-                    DbType = DbType.AnsiString
-                };
+            var sqlManufacturerParam = new SqlParameter
+            {
+                ParameterName = "@Manufacturer",
+                Value = medicine.Manufacturer,
+                DbType = DbType.AnsiString
+            };
 
-                var sqlPriceParam = new SqlParameter
-                {
-                    ParameterName = "@Price",
-                    Value = medicine.Price,
-                    DbType = DbType.Decimal
-                };
+            var sqlPriceParam = new SqlParameter
+            {
+                ParameterName = "@Price",
+                Value = medicine.Price,
+                DbType = DbType.Decimal
+            };
 
-                var sqlAmountParam = new SqlParameter
-                {
-                    ParameterName = "@Amount",
-                    Value = medicine.Amount,
-                    DbType = DbType.Int32
-                };
+            var sqlAmountParam = new SqlParameter
+            {
+                ParameterName = "@Amount",
+                Value = medicine.Amount,
+                DbType = DbType.Int32
+            };
 
-                var sqlWithPrescriptionParam = new SqlParameter
-                {
-                    ParameterName = "@WithPrescription",
-                    Value = medicine.WithPrescription,
-                    DbType = DbType.Boolean
-                };
+            var sqlWithPrescriptionParam = new SqlParameter
+            {
+                ParameterName = "@WithPrescription",
+                Value = medicine.WithPrescription,
+                DbType = DbType.Boolean
+            };
 
-                sqlCommand.Parameters.Add(sqlNameParam);
-                sqlCommand.Parameters.Add(sqlManufacturerParam);
-                sqlCommand.Parameters.Add(sqlPriceParam);
-                sqlCommand.Parameters.Add(sqlAmountParam);
-                sqlCommand.Parameters.Add(sqlWithPrescriptionParam);
+            sqlCommand.Parameters.Add(sqlNameParam);
+            sqlCommand.Parameters.Add(sqlManufacturerParam);
+            sqlCommand.Parameters.Add(sqlPriceParam);
+            sqlCommand.Parameters.Add(sqlAmountParam);
+            sqlCommand.Parameters.Add(sqlWithPrescriptionParam);
 
-                return (int)sqlCommand.ExecuteScalar();
-            }
+            return (int)sqlCommand.ExecuteScalar();
         }
 
         public void EditSingleMedicine(int id, Medicine previousMedicine, Medicine currentMedicine)
         {
-            using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+
+            Close();
+            var SqlConnection = new SqlConnection(connectionString);
+            SqlConnection.Open();
+            var sqlCommand = new SqlCommand();
+            sqlCommand.Connection = SqlConnection;
+            sqlCommand.CommandText = $"UPDATE Medicines SET Manufacturer = @Manufacturer, Price = @Price, " + // bez @Name
+                                     $"Amount = @Amount, WithPrescription = @WithPrescription WHERE Id = @Id;";
+
+            var sqIdParam = new SqlParameter
             {
-                sqlConnection.Open();
-                var sqlCommand = new SqlCommand();
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = $"UPDATE Medicines SET Name = @Name, Manufacturer = @Manufacturer, Price = @Price, " +
-                                         $"Amount = @Amount, WithPrescription = @WithPrescription WHERE Id = @Id;";
+                ParameterName = "@Id",
+                Value = id,
+                DbType = DbType.Int32
+            };
 
-                var sqIdParam = new SqlParameter
-                {
-                    ParameterName = "@Id",
-                    Value = previousMedicine.Id,
-                    DbType = DbType.Int32
-                };
+            var sqlManufacturerParam = new SqlParameter
+            {
+                ParameterName = "@Manufacturer",
+                Value = currentMedicine.Manufacturer,
+                DbType = DbType.AnsiString
+            };
 
-                var sqlNameParam = new SqlParameter
-                {
-                    ParameterName = "@Name",
-                    Value = currentMedicine.Name,
-                    DbType = DbType.AnsiString
-                };
+            var sqlPriceParam = new SqlParameter
+            {
+                ParameterName = "@Price",
+                Value = currentMedicine.Price,
+                DbType = DbType.Decimal
+            };
 
-                var sqlManufacturerParam = new SqlParameter
-                {
-                    ParameterName = "@Manufacturer",
-                    Value = currentMedicine.Manufacturer,
-                    DbType = DbType.AnsiString
-                };
+            var sqlAmountParam = new SqlParameter
+            {
+                ParameterName = "@Amount",
+                Value = currentMedicine.Amount,
+                DbType = DbType.Int32
+            };
 
-                var sqlPriceParam = new SqlParameter
-                {
-                    ParameterName = "@Price",
-                    Value = currentMedicine.Price,
-                    DbType = DbType.Decimal
-                };
+            var sqlWithPrescriptionParam = new SqlParameter
+            {
+                ParameterName = "@WithPrescription",
+                Value = currentMedicine.WithPrescription,
+                DbType = DbType.Boolean
+            };
 
-                var sqlAmountParam = new SqlParameter
-                {
-                    ParameterName = "@Amount",
-                    Value = currentMedicine.Amount,
-                    DbType = DbType.Int32
-                };
+            sqlCommand.Parameters.Add(sqIdParam);
+            sqlCommand.Parameters.Add(sqlManufacturerParam);
+            sqlCommand.Parameters.Add(sqlPriceParam);
+            sqlCommand.Parameters.Add(sqlAmountParam);
+            sqlCommand.Parameters.Add(sqlWithPrescriptionParam);
 
-                var sqlWithPrescriptionParam = new SqlParameter
-                {
-                    ParameterName = "@WithPrescription",
-                    Value = currentMedicine.WithPrescription,
-                    DbType = DbType.Boolean
-                };
-
-                sqlCommand.Parameters.Add(sqIdParam);
-                sqlCommand.Parameters.Add(sqlNameParam);
-                sqlCommand.Parameters.Add(sqlManufacturerParam);
-                sqlCommand.Parameters.Add(sqlPriceParam);
-                sqlCommand.Parameters.Add(sqlAmountParam);
-                sqlCommand.Parameters.Add(sqlWithPrescriptionParam);
-                sqlConnection.Close();
-            }
+            sqlCommand.ExecuteNonQuery();
+            SqlConnection.Close();
         }
 
         public static void UpdateSingleMedicine(int idUpdateMedicine, int amountUpdate)
         {
-            using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+            var SqlConnection = new SqlConnection(connectionString);
+            SqlConnection.Open();
+            var sqlCommand = new SqlCommand();
+            sqlCommand.Connection = SqlConnection;
+            sqlCommand.CommandText = $"UPDATE Medicines SET Amount = @Amount WHERE Id = @Id;";
+
+            var sqIdParam = new SqlParameter
             {
-                sqlConnection.Open();
-                var sqlCommand = new SqlCommand();
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = $"UPDATE Medicines SET Amount = @Amount WHERE Id = @Id;";
+                ParameterName = "@Id",
+                Value = idUpdateMedicine,
+                DbType = DbType.Int32
+            };
 
-                var sqIdParam = new SqlParameter
-                {
-                    ParameterName = "@Id",
-                    Value = idUpdateMedicine,
-                    DbType = DbType.Int32
-                };
-
-                var sqAmountParam = new SqlParameter
-                {
-                    ParameterName = "@Amount",
-                    Value = amountUpdate,
-                    DbType = DbType.Int32
-                };
-
-                sqlCommand.Parameters.Add(sqIdParam);
-                sqlCommand.Parameters.Add(sqAmountParam);
-            }
-        }
-
-        public static void DeleteSingleMedicine(int idDeleteMedicine)
-        {
-            try
+            var sqAmountParam = new SqlParameter
             {
-                using (SqlConnection sqlConnection = new SqlConnection(connectionString))
-                {
-                    sqlConnection.Open();
-                    SqlCommand sqlCommand = new SqlCommand();
-                    sqlCommand.Connection = sqlConnection;
-                    sqlCommand.CommandText = $"DELETE FROM Medicines WHERE Id = @Id;";
+                ParameterName = "@Amount",
+                Value = amountUpdate,
+                DbType = DbType.Int32
+            };
 
-                    SqlParameter sqlIdParam = new SqlParameter();
-                    sqlIdParam.ParameterName = "@Id";
-                    sqlIdParam.Value = idDeleteMedicine;
-                    sqlIdParam.DbType = DbType.Int32;
+            sqlCommand.Parameters.Add(sqIdParam);
+            sqlCommand.Parameters.Add(sqAmountParam);
 
-                    sqlCommand.Parameters.Add(sqlIdParam);
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Something wen wrong..." + e.Message);
-            }
+            sqlCommand.ExecuteNonQuery();
+            SqlConnection.Close();
         }
 
         public static List<Medicine> ShowAllMedicines()
@@ -257,23 +320,22 @@ namespace PharmacyManager
 
             try
             {
-                using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+                var SqlConnection = new SqlConnection(connectionString);
+                SqlConnection.Open();
+                SqlCommand sqlCommand = new SqlCommand();
+                sqlCommand.Connection = SqlConnection;
+                sqlCommand.CommandText = $"SELECT * FROM Medicines;";
+                SqlDataReader sqlReader = sqlCommand.ExecuteReader();
+                while (sqlReader.HasRows && sqlReader.Read())
                 {
-                    sqlConnection.Open();
-                    SqlCommand sqlCommand = new SqlCommand();
-                    sqlCommand.Connection = sqlConnection;
-                    sqlCommand.CommandText = $"SELECT * FROM Medicines;";
-                    SqlDataReader sqlReader = sqlCommand.ExecuteReader();
-                    while (sqlReader.HasRows && sqlReader.Read())
-                    {
-                        medicinesList.Add(new Medicine(sqlReader.GetInt32(0), sqlReader.GetString(1),
-                            sqlReader.GetString(2), sqlReader.GetDecimal(3), sqlReader.GetInt32(4), sqlReader.GetBoolean(5)));
-                    }
+                    medicinesList.Add(new Medicine(sqlReader.GetInt32(0), sqlReader.GetString(1),
+                        sqlReader.GetString(2), sqlReader.GetDecimal(3), sqlReader.GetInt32(4), sqlReader.GetBoolean(5)));
                 }
+                SqlConnection.Close();
             }
             catch (Exception e)
             {
-                Console.WriteLine("Something wen wrong..." + e.Message);
+                Console.WriteLine("Something went wrong..." + e.Message);
             }
             return medicinesList;
         }

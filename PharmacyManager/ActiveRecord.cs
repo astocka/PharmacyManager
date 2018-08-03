@@ -1,26 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Text;
+﻿using System.Data.SqlClient;
 
 namespace PharmacyManager
 {
     public abstract class ActiveRecord
     {
-        static string connectionString = @"Integrated Security=SSPI;" +
-                                          "Initial Catalog=PharmacyManager;" +
-                                          "Data Source=.\\SQLEXPRESS;";
+        private static string connectionString = @"Integrated Security=SSPI;" +
+                                                 "Data Source=.\\SQLEXPRESS;" +
+                                                 "Initial Catalog=Pharmacy;";
 
         public abstract int Id { get; set; }
 
-        public abstract void Save();
+        public abstract int Save(Medicine medicine);
 
-        public abstract void Reload();
+        public abstract Medicine Reload();
 
-        public abstract void Remove();
+        public abstract void Remove(int idDeleteMedicine);
 
-        protected virtual void Open() { }
+        protected virtual SqlConnection Open()
+        {
+            SqlConnection sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Open();
+            return sqlConnection;
+        }
 
-        protected virtual void Close() { }
+        protected virtual void Close()
+        {
+            SqlConnection sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Close();
+        }
     }
 }

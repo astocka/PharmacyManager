@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Text;
 
 namespace PharmacyManager
 {
     public class Order : ActiveRecord
     {
         static string connectionString = @"Integrated Security=SSPI;" +
-                                         "Initial Catalog=PharmacyManager;" +
+                                         "Initial Catalog=Pharmacy;" +
                                          "Data Source=.\\SQLEXPRESS;";
 
         public override int Id { get; set; }
@@ -27,116 +25,148 @@ namespace PharmacyManager
             Amount = amount;
         }
 
-        public override void Reload() { }
-        public override void Remove() { }
-        public override void Save() { }
-
-
-        public static int SellSingleMedicine(int idSellmedicine, int amountSellMedicine, string customerName,
-            string pesel, int prescriptionNumber)
+        public override Medicine Reload()
         {
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            Medicine medicine = new Medicine();
+            return medicine;
+        }
+        public override void Remove(int idDeleteMedicine) { }
+
+        public override int Save(Medicine medicine)
+        {
+            return 0;
+        }
+
+        public static void Sell(int idSellWithoutPrescription, int amountSellWithoutPrescription, int currentAmount)
+        {
+            try
             {
-                connection.Open();
-                var sqlCommand = new SqlCommand();
-                sqlCommand.Connection = connection;
-                sqlCommand.CommandText = $@"UPDATE Medicines SET Amount = @Amount WHERE Id = @Id;
-                                        INSERT INTO Orders (Id, MedicineId, Date, Amount) VALUES 
-                                        ((SELECT Id FROM Medicines WHERE Id = @Id),@Date, @Amount);
-                                        INSERT INTO Prescriptions (CustomerName, Pesel, PrescriptionNumber) 
-                                        VALUES (@CustomerName, @Pesel, @PrescriptionNumber);
-                                        SELECT CAST(SCOPE_IDENTITY() AS INT);";
-
-                var sqlIdParam = new SqlParameter
+                if (currentAmount > 0)
                 {
-                    ParameterName = "@Id",
-                    Value = idSellmedicine,
-                    DbType = DbType.Int32
-                };
+                    var SqlConnection = new SqlConnection(connectionString);
+                    SqlConnection.Open();
+                    SqlCommand sqlCommand = new SqlCommand();
+                    sqlCommand.Connection = SqlConnection;
+                    sqlCommand.CommandText = $@"BEGIN TRANSACTION; UPDATE Medicines SET Amount = @AmountUpdate WHERE Id = @Id;
+                                                INSERT INTO Orders (MedicineId, Date, Amount) VALUES 
+                                                ((SELECT Id FROM Medicines WHERE Id = @Id), @Date, @Amount); COMMIT;";
 
-                var sqlDateParam = new SqlParameter
-                {
-                    ParameterName = "@Date",
-                    Value = DateTime.Now,
-                    DbType = DbType.DateTime
-                };
+                    var sqlIdParam = new SqlParameter
+                    {
+                        ParameterName = "@Id",
+                        Value = idSellWithoutPrescription,
+                        DbType = DbType.Int32
+                    };
 
-                var sqlAmountParam = new SqlParameter
-                {
-                    ParameterName = "@Amount",
-                    Value = amountSellMedicine,
-                    DbType = DbType.Int32
-                };
+                    var sqlDateParam = new SqlParameter
+                    {
+                        ParameterName = "@Date",
+                        Value = DateTime.Now,
+                        DbType = DbType.DateTime
+                    };
 
-                var sqlCustomerNameParam = new SqlParameter
-                {
-                    ParameterName = "@CustomerName",
-                    Value = customerName,
-                    DbType = DbType.AnsiString
-                };
+                    var sqlAmountUpdateParam = new SqlParameter
+                    {
+                        ParameterName = "@AmountUpdate",
+                        Value = currentAmount - amountSellWithoutPrescription,
+                        DbType = DbType.Int32
+                    };
 
-                var sqlPeselParam = new SqlParameter
-                {
-                    ParameterName = "@Pesel",
-                    Value = pesel,
-                    DbType = DbType.AnsiString
-                };
+                    var sqlAmountParam = new SqlParameter
+                    {
+                        ParameterName = "@Amount",
+                        Value = amountSellWithoutPrescription,
+                        DbType = DbType.Int32
+                    };
 
-                var sqlPrescriptionNumberParam = new SqlParameter
-                {
-                    ParameterName = "@PrescriptionNumber",
-                    Value = prescriptionNumber,
-                    DbType = DbType.Int32
-                };
+                    sqlCommand.Parameters.Add(sqlIdParam);
+                    sqlCommand.Parameters.Add(sqlDateParam);
+                    sqlCommand.Parameters.Add(sqlAmountUpdateParam);
+                    sqlCommand.Parameters.Add(sqlAmountParam);
 
-                sqlCommand.Parameters.Add(sqlIdParam);
-                sqlCommand.Parameters.Add(sqlDateParam);
-                sqlCommand.Parameters.Add(sqlAmountParam);
-                sqlCommand.Parameters.Add(sqlCustomerNameParam);
-                sqlCommand.Parameters.Add(sqlPeselParam);
-                sqlCommand.Parameters.Add(sqlPrescriptionNumberParam);
-
-                return (int)sqlCommand.ExecuteScalar();
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Something went wrong" + e.Message);
             }
         }
 
-        public static void SellWithoutPrescription(int idSellWithoutPrescription, int amountSellWithoutPrescription)
+        public static void SellMedicine(int idSellMedicine, int amountSellMedicine, int currentAmount)
         {
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            if (currentAmount > 0)
             {
-                connection.Open();
-                var sqlCommand = new SqlCommand();
-                sqlCommand.Connection = connection;
-                sqlCommand.CommandText = $@"UPDATE Medicines SET Amount = @Amount WHERE Id = @Id;
-                                            INSERT INTO Orders (Id, MedicineId, Date, Amount) VALUES 
-                                            ((SELECT Id FROM Medicines WHERE Id = @Id),@Date, @Amount);
-                                            SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                var SqlConnection = new SqlConnection(connectionString);
+                SqlConnection.Open();
+                SqlCommand sqlCommand = new SqlCommand();
+                sqlCommand.Connection = SqlConnection;
+                sqlCommand.CommandText = $@"UPDATE Medicines SET Amount = @AmountUpdate WHERE Id = @Id;";
 
                 var sqlIdParam = new SqlParameter
                 {
                     ParameterName = "@Id",
-                    Value = idSellWithoutPrescription,
+                    Value = idSellMedicine,
                     DbType = DbType.Int32
                 };
 
-                var sqlDateParam = new SqlParameter
+                var sqlAmountUpdateParam = new SqlParameter
                 {
-                    ParameterName = "@Date",
-                    Value = DateTime.Now,
-                    DbType = DbType.DateTime
-                };
-
-                var sqlAmountParam = new SqlParameter
-                {
-                    ParameterName = "@Amount",
-                    Value = amountSellWithoutPrescription,
+                    ParameterName = "@AmountUpdate",
+                    Value = currentAmount - amountSellMedicine,
                     DbType = DbType.Int32
                 };
 
                 sqlCommand.Parameters.Add(sqlIdParam);
-                sqlCommand.Parameters.Add(sqlDateParam);
-                sqlCommand.Parameters.Add(sqlAmountParam);
+                sqlCommand.Parameters.Add(sqlAmountUpdateParam);
+
+                sqlCommand.ExecuteNonQuery();
             }
+        }
+
+        public static void UpdateOrders(int prescriptionId, int medicineId, int amount)
+        {
+            var SqlConnection = new SqlConnection(connectionString);
+            SqlConnection.Open();
+            var sqlCommand = new SqlCommand();
+            sqlCommand.Connection = SqlConnection;
+            sqlCommand.CommandText = $@"INSERT INTO Orders (PrescriptionId, MedicineId, Date, Amount) 
+                                        VALUES (@PrescriptionId, @MedicineId, @Date, @Amount);";
+
+            var sqlPrescriptionIdParam = new SqlParameter
+            {
+                ParameterName = "@PrescriptionId",
+                Value = prescriptionId,
+                DbType = DbType.Int32
+            };
+
+            var sqlMedicineIdParam = new SqlParameter
+            {
+                ParameterName = "@MedicineId",
+                Value = medicineId,
+                DbType = DbType.Int32
+            };
+
+            var sqlDateParam = new SqlParameter
+            {
+                ParameterName = "@Date",
+                Value = DateTime.Now,
+                DbType = DbType.DateTime
+            };
+
+            var sqlAmountParam = new SqlParameter
+            {
+                ParameterName = "@Amount",
+                Value = amount,
+                DbType = DbType.Int32
+            };
+            sqlCommand.Parameters.Add(sqlPrescriptionIdParam);
+            sqlCommand.Parameters.Add(sqlMedicineIdParam);
+            sqlCommand.Parameters.Add(sqlDateParam);
+            sqlCommand.Parameters.Add(sqlAmountParam);
+
+            sqlCommand.ExecuteNonQuery();
+            SqlConnection.Close();
         }
     }
 }

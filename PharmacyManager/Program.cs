@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 
 namespace PharmacyManager
 {
@@ -64,57 +63,14 @@ namespace PharmacyManager
             }
         }
 
-        private static Medicine GetMedicine()
-        {
-            Console.Clear();
-            MainMenu.MenuS();
-
-            string getName = "";
-            string getManufacturer = "";
-            decimal getPrice = 0;
-            int getAmount = 0;
-            bool getWithPrescription = false;
-
-            try
-            {
-                ConsoleEx.WriteLine("".PadLeft(115, '='), ConsoleColor.DarkMagenta);
-                ConsoleEx.WriteLine(" Please enter data of the medicine:", ConsoleColor.Gray);
-                Console.Write(" >> Name: ");
-                getName = Console.ReadLine().Trim();
-                Console.Write(" >> Manufacturer: ");
-                getManufacturer = Console.ReadLine().Trim();
-                Console.Write(" >> Price: ");
-                getPrice = decimal.Parse(Console.ReadLine().Trim().Replace(".", ","));
-                Console.Write(" >> Amount: ");
-                getAmount = Convert.ToInt32(Console.ReadLine().Trim());
-                Console.Write(" >> Is it a medicine with a prescription [Y/N]: ");
-                string isPrescription = Console.ReadLine().Trim().ToLower();
-                if (isPrescription == "y")
-                {
-                    getWithPrescription = true;
-                }
-            }
-            catch (FormatException e)
-            {
-                Console.Write("Wrong data format. " + e.Message);
-                Console.ReadLine();
-            }
-            catch (Exception e)
-            {
-                Console.Write("Something went wrong... " + e.Message);
-                Console.ReadLine();
-            }
-            return new Medicine(getName, getManufacturer, getPrice, getAmount, getWithPrescription);
-        }
-
         private static void AddMedicine()
         {
             Console.Clear();
             MainMenu.MenuS();
             ConsoleEx.WriteLine("".PadLeft(115, '='), ConsoleColor.DarkMagenta);
             ConsoleEx.WriteLine(" :: ADD MEDICINE ::", ConsoleColor.Gray);
-            Medicine medicine = GetMedicine();
-            medicine.AddSingleMedicine(medicine);
+            Medicine medicine = new Medicine();
+            medicine.Save(medicine.Reload());
             Console.WriteLine();
             ConsoleEx.WriteLine("Success!", ConsoleColor.Green);
             Console.Write("Press ENTER to continue... ");
@@ -131,11 +87,10 @@ namespace PharmacyManager
             int idEditMedicine = Convert.ToInt32(Console.ReadLine().Trim());
 
             Medicine previousMedicine = new Medicine();
-            previousMedicine.GetMedicineById(idEditMedicine);
-
             Console.WriteLine("Enter data of new medicine:");
-            Medicine currentMedicine = GetMedicine();
-            currentMedicine.EditSingleMedicine(idEditMedicine, previousMedicine, currentMedicine);
+            Medicine currentMedicine = new Medicine();
+            currentMedicine.EditSingleMedicine(idEditMedicine, previousMedicine.ReloadById(idEditMedicine), currentMedicine.ReloadToEdit(previousMedicine.Name));
+
             ConsoleEx.WriteLine("Success!", ConsoleColor.Green);
             Console.Write("Press ENTER to continue... ");
             Console.ReadLine();
@@ -167,7 +122,8 @@ namespace PharmacyManager
             ConsoleEx.WriteLine(" :: DELETE MEDICINE ::", ConsoleColor.Gray);
             Console.Write("Enter Id of the medicine: ");
             int idDeleteMedicine = Convert.ToInt32(Console.ReadLine().Trim());
-            Medicine.DeleteSingleMedicine(idDeleteMedicine);
+            Medicine medicine = new Medicine();
+            medicine.Remove(idDeleteMedicine);
             ConsoleEx.WriteLine("Success!", ConsoleColor.Green);
             Console.Write("Press ENTER to continue... ");
             Console.ReadLine();
@@ -219,25 +175,25 @@ namespace PharmacyManager
             int idSellMedicine = Convert.ToInt32(Console.ReadLine());
 
             Medicine medicine = new Medicine();
-            medicine.GetMedicineById(idSellMedicine);
-
             Console.Write("Enter the amount: ");
             int amountSellMedicine = Convert.ToInt32(Console.ReadLine());
 
-            if (medicine.WithPrescription == false)
+            if (medicine.ReloadById(idSellMedicine).WithPrescription == false)
             {
-                Order.SellWithoutPrescription(idSellMedicine, amountSellMedicine);
+                Order.Sell(idSellMedicine, amountSellMedicine, medicine.ReloadById(idSellMedicine).Amount);
             }
             else
             {
-                Console.Write("Enter customer's name:");
+                Console.Write("Enter customer's name: ");
                 string customerName = Console.ReadLine().Trim();
                 Console.Write("Enter PESEL number: ");
                 string pesel = Console.ReadLine().Trim();
                 Console.Write("Enter the prescription number: ");
                 int prescriptionNumber = Convert.ToInt32(Console.ReadLine());
 
-                Order.SellSingleMedicine(idSellMedicine, amountSellMedicine, customerName, pesel, prescriptionNumber);
+                Order.SellMedicine(idSellMedicine, amountSellMedicine, medicine.ReloadById(idSellMedicine).Amount);
+                int prescriptionId = Prescription.SavePrescription(customerName, pesel, prescriptionNumber);
+                Order.UpdateOrders(prescriptionId, idSellMedicine, amountSellMedicine);
             }
             ConsoleEx.WriteLine("Success!", ConsoleColor.Green);
             Console.Write("Press ENTER to continue... ");

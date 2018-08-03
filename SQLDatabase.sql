@@ -1,6 +1,5 @@
-
 --Database
-CREATE DATABASE PharmacyManager;
+CREATE DATABASE Pharmacy;
 
 --Tables : Medicine, Prescriptions, Orders
 CREATE TABLE Medicines(
