@@ -87,10 +87,10 @@ namespace PharmacyManager
 
         public Medicine ReloadById(int idSellMedicine)
         {
-            var SqlConnection = new SqlConnection(connectionString);
-            SqlConnection.Open();
+            var sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Open();
             SqlCommand sqlCommand = new SqlCommand();
-            sqlCommand.Connection = SqlConnection;
+            sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText = $"SELECT * FROM Medicines WHERE Id = @Id;";
 
             var sqIdParam = new SqlParameter
@@ -154,10 +154,10 @@ namespace PharmacyManager
         {
             try
             {
-                var SqlConnection = new SqlConnection(connectionString);
-                SqlConnection.Open();
+                var sqlConnection = new SqlConnection(connectionString);
+                sqlConnection.Open();
                 SqlCommand sqlCommand = new SqlCommand();
-                sqlCommand.Connection = SqlConnection;
+                sqlCommand.Connection = sqlConnection;
                 sqlCommand.CommandText = $"DELETE FROM Medicines WHERE Id = @Id;";
 
                 SqlParameter sqlIdParam = new SqlParameter();
@@ -168,7 +168,7 @@ namespace PharmacyManager
                 sqlCommand.Parameters.Add(sqlIdParam);
 
                 sqlCommand.ExecuteNonQuery();
-                SqlConnection.Close();
+                sqlConnection.Close();
             }
             catch (Exception e)
             {
@@ -233,10 +233,10 @@ namespace PharmacyManager
         {
 
             Close();
-            var SqlConnection = new SqlConnection(connectionString);
-            SqlConnection.Open();
+            var sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Open();
             var sqlCommand = new SqlCommand();
-            sqlCommand.Connection = SqlConnection;
+            sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText = $"UPDATE Medicines SET Manufacturer = @Manufacturer, Price = @Price, " + // bez @Name
                                      $"Amount = @Amount, WithPrescription = @WithPrescription WHERE Id = @Id;";
 
@@ -282,15 +282,15 @@ namespace PharmacyManager
             sqlCommand.Parameters.Add(sqlWithPrescriptionParam);
 
             sqlCommand.ExecuteNonQuery();
-            SqlConnection.Close();
+            sqlConnection.Close();
         }
 
         public static void UpdateSingleMedicine(int idUpdateMedicine, int amountUpdate)
         {
-            var SqlConnection = new SqlConnection(connectionString);
-            SqlConnection.Open();
+            var sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Open();
             var sqlCommand = new SqlCommand();
-            sqlCommand.Connection = SqlConnection;
+            sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText = $"UPDATE Medicines SET Amount = @Amount WHERE Id = @Id;";
 
             var sqIdParam = new SqlParameter
@@ -311,7 +311,7 @@ namespace PharmacyManager
             sqlCommand.Parameters.Add(sqAmountParam);
 
             sqlCommand.ExecuteNonQuery();
-            SqlConnection.Close();
+            sqlConnection.Close();
         }
 
         public static List<Medicine> ShowAllMedicines()
@@ -320,10 +320,10 @@ namespace PharmacyManager
 
             try
             {
-                var SqlConnection = new SqlConnection(connectionString);
-                SqlConnection.Open();
+                var sqlConnection = new SqlConnection(connectionString);
+                sqlConnection.Open();
                 SqlCommand sqlCommand = new SqlCommand();
-                sqlCommand.Connection = SqlConnection;
+                sqlCommand.Connection = sqlConnection;
                 sqlCommand.CommandText = $"SELECT * FROM Medicines;";
                 SqlDataReader sqlReader = sqlCommand.ExecuteReader();
                 while (sqlReader.HasRows && sqlReader.Read())
@@ -331,7 +331,7 @@ namespace PharmacyManager
                     medicinesList.Add(new Medicine(sqlReader.GetInt32(0), sqlReader.GetString(1),
                         sqlReader.GetString(2), sqlReader.GetDecimal(3), sqlReader.GetInt32(4), sqlReader.GetBoolean(5)));
                 }
-                SqlConnection.Close();
+                sqlConnection.Close();
             }
             catch (Exception e)
             {

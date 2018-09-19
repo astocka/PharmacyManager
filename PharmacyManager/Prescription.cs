@@ -47,10 +47,10 @@ namespace PharmacyManager
 
         public static int SavePrescription(string customerName, string pesel, int prescriptionNumber)
         {
-            var SqlConnection = new SqlConnection(connectionString);
-            SqlConnection.Open();
+            var sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Open();
             SqlCommand sqlCommand = new SqlCommand();
-            sqlCommand.Connection = SqlConnection;
+            sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText = $@"INSERT INTO Prescriptions (CustomerName, Pesel, PrescriptionNumber)
                                         VALUES (@CustomerName, @Pesel, @PrescriptionNumber);
                                         SELECT CAST(SCOPE_IDENTITY() AS INT);";

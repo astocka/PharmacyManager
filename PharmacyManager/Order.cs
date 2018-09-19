@@ -43,10 +43,10 @@ namespace PharmacyManager
             {
                 if (currentAmount > 0)
                 {
-                    var SqlConnection = new SqlConnection(connectionString);
-                    SqlConnection.Open();
+                    var sqlConnection = new SqlConnection(connectionString);
+                    sqlConnection.Open();
                     SqlCommand sqlCommand = new SqlCommand();
-                    sqlCommand.Connection = SqlConnection;
+                    sqlCommand.Connection = sqlConnection;
                     sqlCommand.CommandText = $@"BEGIN TRANSACTION; UPDATE Medicines SET Amount = @AmountUpdate WHERE Id = @Id;
                                                 INSERT INTO Orders (MedicineId, Date, Amount) VALUES 
                                                 ((SELECT Id FROM Medicines WHERE Id = @Id), @Date, @Amount); COMMIT;";
@@ -97,10 +97,10 @@ namespace PharmacyManager
         {
             if (currentAmount > 0)
             {
-                var SqlConnection = new SqlConnection(connectionString);
-                SqlConnection.Open();
+                var sqlConnection = new SqlConnection(connectionString);
+                sqlConnection.Open();
                 SqlCommand sqlCommand = new SqlCommand();
-                sqlCommand.Connection = SqlConnection;
+                sqlCommand.Connection = sqlConnection;
                 sqlCommand.CommandText = $@"UPDATE Medicines SET Amount = @AmountUpdate WHERE Id = @Id;";
 
                 var sqlIdParam = new SqlParameter
@@ -126,10 +126,10 @@ namespace PharmacyManager
 
         public static void UpdateOrders(int prescriptionId, int medicineId, int amount)
         {
-            var SqlConnection = new SqlConnection(connectionString);
-            SqlConnection.Open();
+            var sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Open();
             var sqlCommand = new SqlCommand();
-            sqlCommand.Connection = SqlConnection;
+            sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText = $@"INSERT INTO Orders (PrescriptionId, MedicineId, Date, Amount) 
                                         VALUES (@PrescriptionId, @MedicineId, @Date, @Amount);";
 
@@ -166,7 +166,7 @@ namespace PharmacyManager
             sqlCommand.Parameters.Add(sqlAmountParam);
 
             sqlCommand.ExecuteNonQuery();
-            SqlConnection.Close();
+            sqlConnection.Close();
         }
     }
 }
